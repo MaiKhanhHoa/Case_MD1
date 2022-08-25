@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body{
+            background: url("https://media.techmaster.vn/api/static/10194/c05qtac51co3o9rj1eug");
+            background-size: cover;
+        }
+
+    </style>
+</head>
+<body>
+<div style="display: flex; justify-content: center; margin-top: 50px">
+    <canvas
+            width="500"
+            height="500"
+            style="border:5px solid #ff0000"
+            id="display">
+
+    </canvas>
+</div>
+</body>
+<script>
+    let ctx = document.getElementById('display').getContext('2d');
+    ctx.fillStyle = "#ffaaff";
+    ctx.fillRect(0, 0, 500, 500);
+    ctx.font = "20px Calibri";
+    ctx.fillStyle = "#ff0000";
+    ctx.fillText('Click to play', 180, 250);
+    let snakeList, foodList, direction, eaten, intervalVar, score;
+    let snakeBody = {
+        width: 20,
+        height: 20,
+        color: 'green'
+    };
+    let food = {
+        width: 20,
+        height: 20,
+        color: 'orange'
+    };
+
+    //Bấm phím để đổi hướng di chuyển
+    window.addEventListener("keydown", function (event) {
+        //0 - Left
+        //1 - Up
+        //2 - Right
+        //3 - Down
+        if (event.keyCode === 37 && direction !== 2) {
+            direction = 0;
+        } else if (event.keyCode === 38 && direction !== 3) {
+            direction = 1;
+        } else if (event.keyCode === 39 && direction !== 0) {
+            direction = 2;
+        } else if (event.keyCode === 40 && direction !== 1) {
+            direction = 3;
+        }
+    });
+
+    //Vẽ rắn
+    function drawSnake(sb, i) {
+        if (i == 0) {
+            ctx.fillStyle = 'black';
+        } else {
+            ctx.fillStyle = snakeBody.color;
+        }
+        ctx.fillRect(sb.x, sb.y, snakeBody.width, snakeBody.height);
+    };
+
+    //Vẽ thức ăn
+    function drawFood(f) {
+        ctx.fillStyle = food.color;
+        ctx.fillRect(f.x, f.y, food.width, food.height);
+    };
+
+    //Rắn sau khi bấm nút
+    function updateSnakeList() {
+        for (let i = snakeList.length - 1; i >= 0; i--) {
+            if (direction == 0) {
+                if (i == 0) {
+                    snakeList[i].x = snakeList[i].x - snakeBody.width;
+                } else {
+                    snakeList[i].x = snakeList[i - 1].x;
+                    snakeList[i].y = snakeList[i - 1].y;
+                }
+            } else if (direction == 1) {
+                if (i == 0) {
+                    snakeList[i].y = snakeList[i].y - snakeBody.height;
+                } else {
+                    snakeList[i].x = snakeList[i - 1].x;
+                    snakeList[i].y = snakeList[i - 1].y;
+                }
+            } else if (direction == 2) {
+                if (i == 0) {
+                    snakeList[i].x = snakeList[i].x + snakeBody.width;
+                } else {
+                    snakeList[i].x = snakeList[i - 1].x;
+                    snakeList[i].y = snakeList[i - 1].y;
+                }
+            } else if (direction == 3) {
+                if (i == 0) {
+                    snakeList[i].y = snakeList[i].y + snakeBody.height;
+                } else {
+                    snakeList[i].x = snakeList[i - 1].x;
+                    snakeList[i].y = snakeList[i - 1].y;
+                }
+            }
+        }
+    };
+
+    //Va chạm đầu rắn với thức ăn
+    function testCollision(rect1, rect2) {
+        return ((rect1.x < rect2.x + food.width) &&
+            (rect2.x < rect1.x + snakeBody.width) &&
+            (rect1.y < rect2.y + food.height) &&
+            (rect2.y < rect1.y + snakeBody.height));
+    };
+
+    //Va chạm đầu rắn với thân rắn
+    function testCollisionSnake(snake1, snake2) {
+        return snake1.x == snake2.x &&
+            snake1.y == snake2.y;
+    };
+
+    //Va chạm với tường
+    function testCollosionWall() {
+        if (snakeList[0].x >= 500) {
+            clearInterval(intervalVar);
+            ctx.fillText('Game Over !! Score: ' + score, 150, 250);
+        }
+        if (snakeList[0].x <= 0) {
+            clearInterval(intervalVar);
+            ctx.fillText('Game Over !! Score: ' + score, 150, 250);
+        }
+        if (snakeList[0].y >= 500) {
+            clearInterval(intervalVar);
+            ctx.fillText('Game Over !! Score: ' + score, 150, 250);
+        }
+        if (snakeList[0].y <= 0) {
+            clearInterval(intervalVar);
+            ctx.fillText('Game Over !! Score: ' + score, 150, 250);
+        }
+    };
+
+    //Over
+    function isGameOver() {
+        for (let i in snakeList) {
+            if (i == 0)
+                continue;
+            if (testCollisionSnake(snakeList[0], snakeList[i])) {
+                clearInterval(intervalVar);
+                ctx.fillText('Game Over !! Score: ' + score, 150, 250);
+            }
+        }
+    };
+
+    //Rắn ăn
+    function updateSnakePosition() {
+        ctx.clearRect(0, 0, 500, 500);
+        ctx.fillStyle = "#ffaaff";
+        ctx.fillRect(0, 0, 500, 500);
+        while (eaten) {
+            let random = Math.floor(Math.random() * 500);
+            let pos_x = random - random % snakeBody.width;
+            let pos_y = random - random % snakeBody.height;
+            foodList[0] = {x: pos_x, y: pos_y};
+            eaten = false;
+        }
+        if (testCollision(snakeList[0], foodList[0])) {
+            foodList = [];
+            eaten = true;
+            score++;
+            let new_X, new_Y;
+            if (direction == 0) {
+                new_X = snakeList[0].x - snakeBody.width;
+                new_Y = snakeList[0].y;
+            } else if (direction == 1) {
+                new_X = snakeList[0].x;
+                new_Y = snakeList[0].y - snakeBody.height;
+            } else if (direction == 2) {
+                new_X = snakeList[0].x + snakeBody.width;
+                new_Y = snakeList[0].y;
+            } else if (direction == 3) {
+                new_X = snakeList[0].x;
+                new_Y = snakeList[0].y + snakeBody.height;
+            }
+            snakeList.push({x: new_X, y: new_Y});
+        }
+        foodList.forEach(drawFood);
+        snakeList.forEach(drawSnake);
+        ctx.fillText('Score: ' + score, 400, 30);
+        isGameOver();
+        testCollosionWall();
+        updateSnakeList();
+    };
+
+    //Start
+    function startGame() {
+        snakeList = [{x: 180, y: 200},
+            {x: 200, y: 200},
+            {x: 220, y: 200}];
+        foodList = [];
+        eaten = true;
+        score = 0;
+        intervalVar = setInterval(updateSnakePosition, 150);
+    };
+
+    document.getElementById('display').onmousedown = function () {
+        startGame();
+    };
+</script>
+</html>
